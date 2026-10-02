@@ -9,6 +9,7 @@ import {
   Globe2,
   ImageIcon,
   LayoutDashboard,
+  LogOut,
   Menu,
   Newspaper,
   Package,
@@ -39,6 +40,81 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function SiteSwitch({
+  site,
+  onChange,
+  tone = "light",
+}: {
+  site: SiteCode;
+  onChange: (next: SiteCode) => void;
+  tone?: "light" | "dark";
+}) {
+  const dark = tone === "dark";
+  return (
+    <div
+      role="group"
+      aria-label="Активен сайт"
+      className={`inline-flex rounded-lg p-0.5 ${
+        dark
+          ? "border border-white/12 bg-white/8"
+          : "border border-[var(--admin-line)] bg-[var(--admin-sand)]"
+      }`}
+    >
+      {SITE_OPTIONS.map((opt) => {
+        const active = opt.code === site;
+        return (
+          <button
+            key={opt.code}
+            type="button"
+            onClick={() => onChange(opt.code)}
+            title={opt.label}
+            aria-pressed={active}
+            className={`min-w-10 rounded-md px-2.5 py-1.5 text-xs font-bold tracking-wide transition sm:min-w-11 ${
+              active
+                ? dark
+                  ? "bg-[var(--admin-rose)] text-white shadow-sm"
+                  : "bg-white text-[var(--admin-ink)] shadow-[0_1px_2px_rgba(28,25,23,0.08)]"
+                : dark
+                  ? "text-white/55 hover:text-white"
+                  : "text-[var(--admin-mute)] hover:text-[var(--admin-ink)]"
+            }`}
+          >
+            {opt.code.toUpperCase()}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function LogoutButton({
+  email,
+  onLogout,
+  tone = "light",
+}: {
+  email?: string | null;
+  onLogout: () => void;
+  tone?: "light" | "dark";
+}) {
+  const dark = tone === "dark";
+  return (
+    <button
+      type="button"
+      onClick={onLogout}
+      title={email ? `Изход · ${email}` : "Изход"}
+      aria-label={email ? `Изход (${email})` : "Изход"}
+      className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition ${
+        dark
+          ? "border border-white/15 text-white/65 hover:bg-white/10 hover:text-white"
+          : "border border-[var(--admin-line)] bg-white text-[var(--admin-mute)] hover:border-[var(--admin-ink)] hover:text-[var(--admin-ink)]"
+      }`}
+    >
+      <LogOut className="h-3.5 w-3.5" strokeWidth={2} />
+      <span>Изход</span>
+    </button>
+  );
+}
+
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -47,7 +123,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, logout } = useAuth();
 
-  function onSiteChange(next: string) {
+  function onSiteChange(next: SiteCode) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("site", next);
     router.push(`${pathname}?${params.toString()}`);
@@ -68,6 +144,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const currentLabel =
     nav.find((item) => isActive(pathname, item.href))?.label ?? "Админ";
+  const siteLabel =
+    SITE_OPTIONS.find((s) => s.code === site)?.label ?? site;
 
   // Public short links — no admin chrome
   if (pathname === "/go" || pathname.startsWith("/go/")) {
@@ -118,29 +196,27 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="mt-auto border-t border-white/8 p-4">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/40">
-            Активен сайт
-          </p>
-          <select
-            value={site}
-            onChange={(e) => onSiteChange(e.target.value)}
-            className="mt-2 w-full rounded-lg border border-white/12 bg-white/8 px-3 py-2.5 text-sm text-white outline-none transition focus:border-[var(--admin-rose)]"
-          >
-            {SITE_OPTIONS.map((opt) => (
-              <option key={opt.code} value={opt.code} className="text-black">
-                {opt.label}
-              </option>
-            ))}
-          </select>
+        <div className="mt-auto space-y-3 border-t border-white/8 p-4">
+          <div>
+            <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/40">
+              Активен сайт
+            </p>
+            <SiteSwitch site={site} onChange={onSiteChange} tone="dark" />
+          </div>
           {useFirebase && user ? (
-            <button
-              type="button"
-              onClick={() => void logout()}
-              className="mt-3 w-full rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
-            >
-              Изход ({user.email})
-            </button>
+            <div className="flex items-center justify-between gap-2">
+              <p
+                className="min-w-0 truncate text-[0.7rem] text-white/40"
+                title={user.email ?? undefined}
+              >
+                {user.email}
+              </p>
+              <LogoutButton
+                email={user.email}
+                onLogout={() => void logout()}
+                tone="dark"
+              />
+            </div>
           ) : null}
         </div>
       </aside>
@@ -210,29 +286,25 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
             <div className="space-y-3 border-t border-white/8 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <div>
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/40">
+                <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-white/40">
                   Активен сайт
                 </p>
-                <select
-                  value={site}
-                  onChange={(e) => onSiteChange(e.target.value)}
-                  className="mt-2 w-full rounded-lg border border-white/12 bg-white/8 px-3 py-3 text-sm text-white outline-none transition focus:border-[var(--admin-rose)]"
-                >
-                  {SITE_OPTIONS.map((opt) => (
-                    <option key={opt.code} value={opt.code} className="text-black">
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                <SiteSwitch site={site} onChange={onSiteChange} tone="dark" />
               </div>
               {useFirebase && user ? (
-                <button
-                  type="button"
-                  onClick={() => void logout()}
-                  className="w-full rounded-lg border border-white/15 px-3 py-2.5 text-xs font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
-                >
-                  Изход
-                </button>
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    className="min-w-0 truncate text-[0.7rem] text-white/40"
+                    title={user.email ?? undefined}
+                  >
+                    {user.email}
+                  </p>
+                  <LogoutButton
+                    email={user.email}
+                    onLogout={() => void logout()}
+                    tone="dark"
+                  />
+                </div>
               ) : null}
               <a
                 href={siteLocalOrigin(site)}
@@ -262,48 +334,37 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 <Menu className="h-5 w-5" strokeWidth={2} />
               </button>
 
-              <div className="min-w-0 lg:hidden">
+              <div className="min-w-0">
                 <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-[var(--admin-mute)]">
-                  {SITE_OPTIONS.find((s) => s.code === site)?.label ?? site}
+                  {siteLabel}
                 </p>
                 <p className="truncate text-sm font-semibold text-[var(--admin-ink)]">
                   {currentLabel}
                 </p>
               </div>
-
-              <div className="hidden min-w-0 lg:block">
-                <p className="text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-[var(--admin-mute)]">
-                  Управление
-                </p>
-                <p className="truncate text-sm font-semibold text-[var(--admin-ink)]">
-                  {SITE_OPTIONS.find((s) => s.code === site)?.label ?? site}
-                </p>
-              </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <select
-                value={site}
-                onChange={(e) => onSiteChange(e.target.value)}
-                className="hidden h-10 rounded-lg border border-[var(--admin-line)] bg-white px-2.5 text-xs font-medium outline-none sm:block lg:hidden"
-                aria-label="Сайт"
-              >
-                {SITE_OPTIONS.map((opt) => (
-                  <option key={opt.code} value={opt.code}>
-                    {opt.code}
-                  </option>
-                ))}
-              </select>
+              <SiteSwitch site={site} onChange={onSiteChange} />
               <a
                 href={siteLocalOrigin(site)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-lg border border-stone-400 bg-white px-3.5 text-sm font-semibold text-[var(--admin-ink)] shadow-[0_1px_0_rgba(28,25,23,0.06)] transition hover:border-[var(--admin-ink)] hover:bg-[var(--admin-sand)]"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--admin-line)] bg-white text-[var(--admin-ink)] transition hover:border-[var(--admin-ink)] hover:bg-[var(--admin-sand)] sm:w-auto sm:gap-2 sm:px-3"
                 aria-label="Отвори сайта"
+                title="Отвори сайта"
               >
-                <span className="hidden sm:inline">Отвори сайта</span>
+                <span className="hidden text-xs font-semibold sm:inline">
+                  Сайт
+                </span>
                 <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
               </a>
+              {useFirebase && user ? (
+                <LogoutButton
+                  email={user.email}
+                  onLogout={() => void logout()}
+                />
+              ) : null}
             </div>
           </div>
         </header>
