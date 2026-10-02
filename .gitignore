@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+.gh-pages-park
+.env*.local
+SECRETS.local.md
+*.local.md
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+public/uploads

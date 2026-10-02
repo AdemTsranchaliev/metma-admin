@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Public read for storefronts later; writes only for logged-in admin users.
+    match /products/{id} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+    match /pages/{id} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+    match /blogPosts/{id} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+    match /media/{id} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+    match /categories/{id} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+    match /qrLinks/{id} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+
+    // Contact form inquiries from the public storefront
+    match /inquiries/{id} {
+      allow create: if
+        request.resource.data.keys().hasAll(['site', 'name', 'email', 'message', 'createdAt'])
+        && request.resource.data.site is string
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() < 200
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 3
+        && request.resource.data.email.size() < 320
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() < 8000;
+      allow read, update, delete: if signedIn();
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "metma-admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3003",
+    "build": "next build",
+    "build:gh-pages": "node scripts/gh-pages-api.mjs park && GITHUB_PAGES=true next build; status=$?; node scripts/gh-pages-api.mjs restore; exit $status",
+    "start": "next start -p 3003",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "cloudinary": "^2.11.0",
+    "firebase": "^12.19.0",
+    "lucide-react": "^1.47.0",
+    "next": "^16.3.5",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^20.19.43",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3"
+  }
+}
