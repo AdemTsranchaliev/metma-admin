@@ -257,12 +257,16 @@ export function ProductsManager({ site }: { site: SiteCode }) {
           }
         >
           <form id="product-form" className="grid gap-6" onSubmit={onSubmit}>
+            {error ? (
+              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </p>
+            ) : null}
             <FormSection title="Продукт">
               <Field label="Име">
                 <input
                   className={inputClass}
                   required
-                  autoFocus={!editing}
                   value={form.name}
                   onChange={(e) => {
                     const name = e.target.value;
