@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  Crop,
   ExternalLink,
   FolderTree,
   Globe2,
@@ -27,6 +28,7 @@ const nav = [
   { href: "/qr", label: "QR кодове", icon: QrCode },
   { href: "/blog", label: "Блог", icon: Newspaper },
   { href: "/media", label: "Медия", icon: ImageIcon },
+  { href: "/hero", label: "Хиро", icon: Crop },
   { href: "/sites", label: "Сайтове", icon: Globe2 },
 ];
 

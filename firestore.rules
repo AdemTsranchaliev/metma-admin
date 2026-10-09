@@ -31,6 +31,11 @@ service cloud.firestore {
       allow write: if signedIn();
     }
 
+    match /heroFrames/{id} {
+      allow read: if true;
+      allow write: if signedIn();
+    }
+
     // Contact form inquiries from the public storefront
     match /inquiries/{id} {
       allow create: if

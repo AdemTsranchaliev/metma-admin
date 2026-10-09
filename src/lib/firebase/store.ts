@@ -25,6 +25,8 @@ import type {
   QrLink,
   SiteCode,
 } from "@/lib/types";
+import type { HeroFrame } from "@/lib/hero-frame";
+import { normalizeHeroFrame } from "@/lib/hero-frame";
 import { BG_PRODUCT_CATEGORIES, DEFAULT_PRODUCT_CATEGORIES } from "@/lib/types";
 import { newId } from "@/lib/utils";
 
@@ -571,6 +573,22 @@ export async function fbSaveQrLink(
 
 export async function fbDeleteQrLink(id: string) {
   await deleteDoc(doc(getDb(), COLLECTIONS.qrLinks, id));
+}
+
+export async function fbFetchHeroFrame(site: SiteCode): Promise<HeroFrame> {
+  const snap = await getDoc(doc(getDb(), "heroFrames", site));
+  if (!snap.exists()) return normalizeHeroFrame(undefined);
+  return normalizeHeroFrame(snap.data() as Partial<HeroFrame>);
+}
+
+export async function fbSaveHeroFrame(site: SiteCode, frame: HeroFrame) {
+  const clean = normalizeHeroFrame(frame);
+  await setDoc(doc(getDb(), "heroFrames", site), {
+    site,
+    desktop: clean.desktop,
+    phone: clean.phone,
+    updatedAt: serverTimestamp(),
+  });
 }
 
 export async function fbUpdateDoc(
