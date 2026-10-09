@@ -11,12 +11,14 @@ import {
   type HeroFrame,
   type HeroSide,
 } from "@/lib/hero-frame";
-import { sitePublicOrigin, type SiteCode } from "@/lib/sites";
+import { sitePublicOrigin } from "@/lib/sites";
 
-export function HeroFrameManager({ site }: { site: SiteCode }) {
+// The hero video only exists on metma-bg.com, so its frame is always stored under Bg.
+const HERO_SITE = "Bg";
+
+export function HeroFrameManager() {
   const [frame, setFrame] = useState<HeroFrame>(DEFAULT_HERO_FRAME);
-  const [loadedSite, setLoadedSite] = useState<SiteCode | null>(null);
-  const loading = loadedSite !== site;
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -27,7 +29,7 @@ export function HeroFrameManager({ site }: { site: SiteCode }) {
 
   useEffect(() => {
     let cancelled = false;
-    fbFetchHeroFrame(site)
+    fbFetchHeroFrame(HERO_SITE)
       .then((next) => {
         if (!cancelled) {
           setFrame(next);
@@ -42,12 +44,12 @@ export function HeroFrameManager({ site }: { site: SiteCode }) {
         }
       })
       .finally(() => {
-        if (!cancelled) setLoadedSite(site);
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [site]);
+  }, []);
 
   function update(side: keyof HeroFrame, patch: Partial<HeroSide>) {
     setFrame((current) => ({
@@ -66,7 +68,7 @@ export function HeroFrameManager({ site }: { site: SiteCode }) {
     setError("");
     setMessage("");
     try {
-      await fbSaveHeroFrame(site, frame);
+      await fbSaveHeroFrame(HERO_SITE, frame);
       setMessage("Кадърът е записан. Презареди началната страница, за да го видиш.");
     } catch {
       setError("Записът не мина. Правилата на базата трябва да позволяват heroFrames.");
@@ -77,11 +79,6 @@ export function HeroFrameManager({ site }: { site: SiteCode }) {
 
   return (
     <div className="space-y-5">
-      {site !== "Bg" ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          Видеото на началната страница е на България. Избери България от менюто горе, за да нагласиш кадъра на metma-bg.com.
-        </p>
-      ) : null}
 
       <div className="grid gap-5 xl:grid-cols-2">
         <FrameEditor
