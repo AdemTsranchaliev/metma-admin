@@ -63,6 +63,48 @@ export function productPublicUrl(site: SiteCode, productSlug: string) {
   return `${sitePublicOrigin(site)}/${slug}/`;
 }
 
+/** Printed QR codes always use the live domain, even when the admin runs locally. */
+export function siteLiveOrigin(site: SiteCode) {
+  const envKey =
+    site === "De"
+      ? process.env.NEXT_PUBLIC_SITE_DE_URL
+      : site === "Bg"
+        ? process.env.NEXT_PUBLIC_SITE_BG_URL
+        : process.env.NEXT_PUBLIC_SITE_USA_URL;
+
+  if (envKey?.trim()) return envKey.replace(/\/$/, "");
+  return LIVE_ORIGINS[site];
+}
+
+/**
+ * Turn a typed name (or a pasted URL) into the path segment.
+ * Keeps Cyrillic letters, e.g. b-622-а-decorative-thermal-stickers-6-pcs.
+ */
+export function qrPathFromName(raw: string) {
+  let value = raw.trim();
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      value = decodeURIComponent(new URL(value).pathname);
+    } catch {
+      /* keep the typed text */
+    }
+  }
+  return value
+    .replace(/^\/+|\/+$/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^\p{L}\p{N}-]+/gu, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** Exact string encoded in the QR: https://metma-de.com/{name}/ */
+export function qrContentUrl(site: SiteCode, name: string) {
+  const path = qrPathFromName(name);
+  if (!path) return "";
+  return `${siteLiveOrigin(site)}/${path}/`;
+}
+
 /**
  * Unique shareable QR short-link (admin /go/…).
  */

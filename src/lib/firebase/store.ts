@@ -27,7 +27,7 @@ import type {
 } from "@/lib/types";
 import type { HeroFrame } from "@/lib/hero-frame";
 import { normalizeHeroFrame } from "@/lib/hero-frame";
-import { BG_PRODUCT_CATEGORIES, DEFAULT_PRODUCT_CATEGORIES } from "@/lib/types";
+import { BG_PRODUCT_CATEGORIES, DEFAULT_PRODUCT_CATEGORIES, USA_PRODUCT_CATEGORIES } from "@/lib/types";
 import { newId } from "@/lib/utils";
 
 export const COLLECTIONS = {
@@ -426,7 +426,12 @@ export async function fbGetCategories(site: SiteCode) {
 
   // Seed defaults once per site
   const siteId = siteIdFor(site);
-  const defaults = site === "Bg" ? BG_PRODUCT_CATEGORIES : DEFAULT_PRODUCT_CATEGORIES;
+  const defaults =
+    site === "Bg"
+      ? BG_PRODUCT_CATEGORIES
+      : site === "Usa"
+        ? USA_PRODUCT_CATEGORIES
+        : DEFAULT_PRODUCT_CATEGORIES;
   const seeded: ProductCategory[] = [];
   for (const [i, c] of defaults.entries()) {
     const id = `cat-${site.toLowerCase()}-${c.slug}`;

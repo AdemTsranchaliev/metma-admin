@@ -6,9 +6,9 @@ import { Button } from "@/components/forms";
 import { Download, ExternalLink, QrCode } from "lucide-react";
 
 type Props = {
-  /** URL encoded in the QR (/go/… short link). */
+  /** Exact URL encoded in the QR code. */
   value: string;
-  /** Final destination after /go/ redirect. */
+  /** Optional second line, when it differs from the QR contents. */
   destination?: string;
   testable?: boolean;
   onDownload?: () => void;
@@ -139,9 +139,7 @@ export function QrPreview({
           </div>
 
           <p className="text-[0.72rem] leading-relaxed text-[var(--admin-mute)]">
-            {testable
-              ? "Тествай отваря /go/… и пренасочва към крайния адрес."
-              : "Запазете, после тествайте пренасочването през /go/…"}
+            В QR кода е записан този адрес. Сканирането отваря страницата директно.
           </p>
         </div>
       </div>

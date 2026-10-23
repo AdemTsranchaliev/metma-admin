@@ -11,7 +11,7 @@ export default function QrCodesPage() {
     <>
       <PageHeader
         title="QR кодове"
-        description="Напишете URL и по желание пренасочване. При сканиране води към пренасочването (ако го има) или към URL."
+        description="Напишете име. Домейнът се взима от избрания сайт — metma-de.com, metma-bg.com или metma-usa.com — и QR кодът съдържа целия адрес."
       />
       <QrCodesManager site={site} />
     </>

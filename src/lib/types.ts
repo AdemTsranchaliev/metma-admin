@@ -24,6 +24,17 @@ export const BG_PRODUCT_CATEGORIES: Omit<
   { name: "Рекламни дисплеи", slug: "displei", description: "Рекламни стойки", sortOrder: 4, isActive: true },
 ];
 
+/** Default USA categories — seeded when the American site has none */
+export const USA_PRODUCT_CATEGORIES: Omit<
+  ProductCategory,
+  "id" | "siteId"
+>[] = [
+  { name: "Classic kits", slug: "classic", description: "Tablets, cups and crayons", sortOrder: 1, isActive: true },
+  { name: "Children kits", slug: "children", description: "Character kits for children", sortOrder: 2, isActive: true },
+  { name: "Display", slug: "display", description: "Retail display", sortOrder: 3, isActive: true },
+  { name: "Egg decoration", slug: "decoration", description: "Stamps, wraps, pens and stickers", sortOrder: 4, isActive: true },
+];
+
 /** Default DE categories — also used as seed */
 export const DEFAULT_PRODUCT_CATEGORIES: Omit<
   ProductCategory,

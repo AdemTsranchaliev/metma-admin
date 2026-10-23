@@ -8,7 +8,12 @@ import {
   type QrLink,
 } from "@/lib/api";
 import { downloadQrPng } from "@/lib/qr";
-import { qrPublicUrl, resolveQrDestination, type SiteCode } from "@/lib/sites";
+import {
+  qrContentUrl,
+  qrPathFromName,
+  siteLiveOrigin,
+  type SiteCode,
+} from "@/lib/sites";
 import { uniquePageCode } from "@/lib/utils";
 import { useListLayout } from "@/lib/use-list-layout";
 import { EmptyState } from "@/components/ui";
@@ -39,8 +44,7 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
   const [editing, setEditing] = useState<QrLink | null>(null);
   const [creating, setCreating] = useState(false);
   const [code, setCode] = useState("");
-  const [pageUrl, setPageUrl] = useState("");
-  const [forwardUrl, setForwardUrl] = useState("");
+  const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -63,24 +67,16 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
     void reload();
   }, [reload]);
 
-  function goUrl(c: string) {
-    return qrPublicUrl(site, c);
-  }
-
-  function destinationOf(page: string, forward: string) {
-    const p = page.trim();
-    const f = forward.trim();
-    return resolveQrDestination({
-      redirectUrl: p || f,
-      forwardUrl: p && f ? f : null,
-    });
+  function storedTarget(item: QrLink) {
+    const saved = item.redirectUrl.trim();
+    if (/^https?:\/\//i.test(saved)) return saved;
+    return qrContentUrl(site, item.productSlug || item.productName || item.code);
   }
 
   function openCreate() {
     setEditing(null);
     setCode(uniquePageCode());
-    setPageUrl("");
-    setForwardUrl("");
+    setName("");
     setCreating(true);
   }
 
@@ -88,8 +84,9 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
     setCreating(false);
     setEditing(item);
     setCode(item.code);
-    setPageUrl(item.redirectUrl);
-    setForwardUrl(item.forwardUrl ?? "");
+    setName(
+      qrPathFromName(item.redirectUrl || item.productSlug || item.productName || ""),
+    );
   }
 
   function close() {
@@ -99,10 +96,10 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const page = pageUrl.trim();
-    const forward = forwardUrl.trim();
-    if (!page && !forward) {
-      setError("Попълнете URL и/или пренасочване.");
+    const path = qrPathFromName(name);
+    const target = qrContentUrl(site, name);
+    if (!path || !target) {
+      setError("Напишете име.");
       return;
     }
     const linkCode = (editing ? code : code || uniquePageCode()).trim();
@@ -117,11 +114,11 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
         site,
         {
           code: linkCode,
-          redirectUrl: page || forward,
-          forwardUrl: page && forward ? forward : null,
+          redirectUrl: target,
+          forwardUrl: null,
           productId: null,
-          productName: null,
-          productSlug: null,
+          productName: name.trim(),
+          productSlug: path,
         },
         editing?.id,
       );
@@ -146,7 +143,7 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
 
   async function copyLink(item: QrLink) {
     try {
-      await navigator.clipboard.writeText(goUrl(item.code));
+      await navigator.clipboard.writeText(storedTarget(item));
       setCopiedId(item.id);
       window.setTimeout(() => setCopiedId(null), 1600);
     } catch {
@@ -158,9 +155,10 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
     setQrBusy(item.id);
     setError(null);
     try {
+      const target = storedTarget(item);
       await downloadQrPng(
-        goUrl(item.code),
-        `metma-qr-${site.toLowerCase()}-${item.code}.png`,
+        target,
+        `metma-qr-${site.toLowerCase()}-${qrPathFromName(target) || item.code}.png`,
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "QR кодът не бе генериран");
@@ -170,12 +168,19 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
   }
 
   const open = creating || Boolean(editing);
-  const shortUrl = code ? goUrl(code) : "";
-  const destination = destinationOf(pageUrl, forwardUrl);
+  const origin = siteLiveOrigin(site);
+  const path = qrPathFromName(name);
+  const targetUrl = qrContentUrl(site, name);
   const visible = useMemo(
     () =>
       items.filter((item) =>
-        matchesQuery(query, item.code, item.redirectUrl, item.forwardUrl),
+        matchesQuery(
+          query,
+          item.code,
+          item.redirectUrl,
+          item.productName,
+          item.productSlug,
+        ),
       ),
     [items, query],
   );
@@ -187,7 +192,7 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
           <SearchField
             value={query}
             onChange={setQuery}
-            placeholder="Търсене по код или URL…"
+            placeholder="Търсене по име или адрес…"
           />
         }
       >
@@ -219,8 +224,8 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
             <QrCard
               key={item.id}
               item={item}
-              shortUrl={goUrl(item.code)}
-              destination={resolveQrDestination(item)}
+              shortUrl={storedTarget(item)}
+              destination={storedTarget(item)}
               copied={copiedId === item.id}
               busy={qrBusy === item.id}
               onCopy={() => copyLink(item)}
@@ -236,8 +241,8 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
             <QrRow
               key={item.id}
               item={item}
-              shortUrl={goUrl(item.code)}
-              destination={resolveQrDestination(item)}
+              shortUrl={storedTarget(item)}
+              destination={storedTarget(item)}
               copied={copiedId === item.id}
               busy={qrBusy === item.id}
               onCopy={() => copyLink(item)}
@@ -252,7 +257,7 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
       {open ? (
         <Modal
           title={editing ? "Редакция на QR код" : "Нов QR код"}
-          description="Напишете URL. Ако попълните пренасочване — при сканиране води там."
+          description={`Домейнът е ${origin.replace(/^https?:\/\//, "")}. Напишете име — линкът и QR кодът стават ${origin}/име/`}
           onClose={close}
           footer={
             <>
@@ -262,9 +267,7 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
               <Button
                 type="submit"
                 form="qr-form"
-                disabled={
-                  saving || (!pageUrl.trim() && !forwardUrl.trim())
-                }
+                disabled={saving || !targetUrl}
               >
                 {saving ? (
                   "Запис…"
@@ -279,64 +282,54 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
           }
         >
           <form id="qr-form" className="grid gap-6" onSubmit={onSubmit}>
-            <FormSection title="Адреси">
+            <FormSection title="Име">
               <Field
-                label="URL"
-                hint="напр. https://metma-de.com/b-622-…/"
+                label="Име"
+                hint="Интервалите стават тирета. Кирилицата се запазва."
               >
-                <input
-                  className={`${inputClass} font-mono text-xs sm:text-sm`}
-                  type="url"
-                  autoFocus={!editing}
-                  value={pageUrl}
-                  onChange={(e) => setPageUrl(e.target.value)}
-                  placeholder="https://metma-de.com/b-622-…/"
-                />
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+                  <span className="shrink-0 font-mono text-xs text-[var(--admin-mute)] sm:text-sm">
+                    {origin}/
+                  </span>
+                  <input
+                    className={`${inputClass} min-w-0 font-mono text-xs sm:text-sm`}
+                    autoFocus={!editing}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="b-622-а-decorative-thermal-stickers-6-pcs"
+                  />
+                </div>
               </Field>
 
-              <Field
-                label="Пренасочи към"
-                hint="ако е попълнено — сканирането води тук"
-              >
-                <input
-                  className={`${inputClass} font-mono text-xs sm:text-sm`}
-                  type="url"
-                  value={forwardUrl}
-                  onChange={(e) => setForwardUrl(e.target.value)}
-                  placeholder="https://ugc.bg/"
-                />
-              </Field>
-
-              {destination ? (
+              {targetUrl ? (
                 <p className="rounded-xl border border-[var(--admin-line)] bg-white px-3.5 py-2.5 text-xs leading-relaxed">
                   <span className="font-semibold text-[var(--admin-ink)]">
-                    При сканиране →{" "}
+                    В QR кода →{" "}
                   </span>
                   <a
-                    href={destination}
+                    href={targetUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="break-all font-mono text-[var(--admin-rose)] hover:underline"
                   >
-                    {destination}
+                    {targetUrl}
                   </a>
                 </p>
               ) : null}
             </FormSection>
 
             <FormSection title="Preview">
-              {shortUrl && destination ? (
+              {targetUrl ? (
                 <QrPreview
-                  value={shortUrl}
-                  destination={destination}
-                  testable={Boolean(editing)}
+                  value={targetUrl}
+                  testable
                   downloading={qrBusy === (editing?.id ?? "__form__")}
                   onDownload={() => {
                     const id = editing?.id ?? "__form__";
                     setQrBusy(id);
                     void downloadQrPng(
-                      shortUrl,
-                      `metma-qr-${site.toLowerCase()}-${code}.png`,
+                      targetUrl,
+                      `metma-qr-${site.toLowerCase()}-${path}.png`,
                     )
                       .catch((err) =>
                         setError(
@@ -350,7 +343,7 @@ export function QrCodesManager({ site }: { site: SiteCode }) {
                 />
               ) : (
                 <p className="rounded-xl border border-dashed border-stone-300 bg-white px-3.5 py-3 text-xs text-[var(--admin-mute)]">
-                  Попълнете поне един URL.
+                  Напишете име.
                 </p>
               )}
             </FormSection>
@@ -387,8 +380,8 @@ function QrCard({
       <div className="flex items-start gap-3 border-b border-[var(--admin-line)] px-4 py-3">
         <QrPreview value={shortUrl} compact />
         <div className="min-w-0 flex-1">
-          <p className="font-mono text-sm font-semibold text-[var(--admin-ink)]">
-            {item.code}
+          <p className="break-all font-mono text-sm font-semibold text-[var(--admin-ink)]">
+            {item.productSlug || item.code}
           </p>
         </div>
       </div>
@@ -483,7 +476,7 @@ function QrRow({
           rel="noreferrer"
           className="inline-flex items-center gap-1.5 font-mono text-sm font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-rose)]"
         >
-          /go/?c={item.code}
+          {item.productSlug || item.code}
           <ExternalLink className="h-3 w-3 opacity-45" strokeWidth={2} />
         </a>
         <a
