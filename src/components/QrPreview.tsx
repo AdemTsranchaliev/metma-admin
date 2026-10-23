@@ -139,7 +139,9 @@ export function QrPreview({
           </div>
 
           <p className="text-[0.72rem] leading-relaxed text-[var(--admin-mute)]">
-            В QR кода е записан този адрес. Сканирането отваря страницата директно.
+            {destination
+              ? "В QR кода е адресът на сайта. Като се отвори, пренасочва към линка отдолу."
+              : "В QR кода е записан този адрес."}
           </p>
         </div>
       </div>
